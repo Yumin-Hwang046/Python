@@ -1,0 +1,136 @@
+import pygame
+import random
+
+pygame.init()
+
+#Display Setting
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Life is Hard")
+ 
+#Colors
+MINT = (207, 255, 229)
+PINK = (244, 194, 194)
+SKYBLUE = (135, 206, 235)
+WHITE = (0,0,0)
+
+#Game Setting
+FPS = 60
+GRAVITY = 1
+JUMP_STRENGTH = -30
+OBSTACLE_WIDTH = 80
+OBSTACLE_HEIGHT = 80
+OBSTACLE_SPEED = 5
+OBSTACLE_MIN_SPEED = 3
+OBSTACLE_MAX_SPEED = 7
+MIN_OBSTACLE_INTERVAL = 50
+MAX_OBSTACLE_INTERVAL = 200
+
+class Character:
+    def __init__(self):
+        self.width = 70  # Larger character size
+        self.height = 70
+        self.x = 100
+        self.y = HEIGHT - self.height
+        self.vel_y = 0  # Vertical velocity
+        self.jumps_left = 2  # Can jump twice: once from the ground, once while it's floating
+
+    def update(self):
+        self.vel_y += GRAVITY
+        self.y += self.vel_y
+
+        # Prevent the character from falling through the ground
+        if self.y >= HEIGHT - self.height:
+            self.y = HEIGHT - self.height
+            self.vel_y = 0
+            self.jumps_left = 2  # Reset jumps when the character touches the ground
+
+    def jump(self):
+        if self.jumps_left > 0:  # Check if jumps are available
+            self.vel_y = JUMP_STRENGTH
+            self.jumps_left -= 1  # Decrease jumps after each jump 
+
+    def draw(self):
+        # Circle, the face of character
+        pygame.draw.circle(screen, MINT, (self.x + self.width // 2, self.y + self.height // 2), self.width // 2)
+
+        # Eyes
+        pygame.draw.circle(screen, PINK, (self.x + 20, self.y + 30), 7)  # Left one
+        pygame.draw.circle(screen, PINK, (self.x + 50, self.y + 30), 7)  # Right one
+
+        # Smile
+        pygame.draw.arc(screen, PINK , (self.x + 20, self.y + 35, 30, 20), 3.14, 0, 2)
+     
+class Obstacle:
+    def __init__(self):
+        self.width = OBSTACLE_WIDTH
+        self.height = OBSTACLE_HEIGHT
+        self.x = random.randint(WIDTH, WIDTH + 300)  
+        self.y = HEIGHT - self.height
+        self.vel_x = OBSTACLE_SPEED
+    def update(self):
+        self.x -= self.vel_x
+        if self.x + self.width < 0:
+            self.x = WIDTH
+            self.y = HEIGHT - self.height
+            
+    def draw(self):
+        pygame.draw.rect(screen, PINK, (self.x, self.y, self.width, self.height))
+
+def display_game_over():
+    font = pygame.font.Font(None, 74)
+    text = font.render("Life is Hard!", True, WHITE)
+    text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+    screen.blit(text, text_rect)
+
+def main():
+    character = Character()
+    obstacles = [Obstacle() for _ in range(3)]
+    clock = pygame.time.Clock()
+
+    running = True
+    game_over = False
+    while running:
+        clock.tick(FPS)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE and not game_over:
+                    character.jump()
+
+        if game_over:
+            display_game_over()  # Display the "Life is Hard!" message
+
+            # Wait for 2 seconds before quitting
+            pygame.time.wait(4000)
+            running = False
+        else:
+            character.update()
+            for obstacle in obstacles:
+                obstacle.update()
+
+            # Check for collisions
+            for obstacle in obstacles:
+                if (character.x < obstacle.x + obstacle.width and
+                    character.x + character.width > obstacle.x and
+                    character.y < obstacle.y + obstacle.height and
+                    character.y + character.height > obstacle.y):
+                    game_over = True
+                    break
+
+            screen.fill(SKYBLUE)
+            character.draw()
+            for obstacle in obstacles:
+                obstacle.draw()
+
+        pygame.display.update()
+
+    pygame.quit()
+
+
+
+# Finally Let's Run
+if __name__ == "__main__":
+    main()
